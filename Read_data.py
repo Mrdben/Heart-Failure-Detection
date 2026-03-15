@@ -17,4 +17,6 @@ plt.title(f"{profile_name}")
 plt.xlabel("Beat Number")
 plt.ylabel("Time Interval (Seconds)")
 
+
 plt.show()
+print("hi, test")
