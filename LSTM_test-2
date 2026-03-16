@@ -1,0 +1,49 @@
+import wfdb
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from sklearn.preprocessing import MinMaxScaler
+
+input_length = 1500
+predict_length = 1500
+
+#input data
+data_path = r"D:\School\Research\Heart\bidmc-congestive-heart-failure-database-1.0.0"
+profile_name = "chf01"
+rec = wfdb.rdann(f"{data_path}/{profile_name}", "ecg")
+interval = np.diff(rec.sample) / rec.fs
+
+interval = interval[(interval > 0.3) & (interval < 2.0)]   #keep beat interval from 0.3-2seconds
+keep = np.ones(len(interval), dtype=bool)
+for i in range(1, len(interval)-1):
+    if abs(interval[i] - interval[i-1]) > 0.5 or abs(interval[i] - interval[i+1]) > 0.5:       #clear jumps more than 0.5s
+        keep[i] = False
+clean_int = interval[keep]
+final = clean_int[:input_length + predict_length]
+
+scaler = MinMaxScaler()
+scaled_data = scaler.fit_transform(final.reshape(-1, 1))         #normalizing the cleaned data
+
+X_data = scaled_data[:input_length].reshape(1, input_length, 1)
+y_data = scaled_data[input_length:].reshape(1, predict_length) 
+
+lstm = Sequential()
+lstm.add(LSTM(128, input_shape=(input_length, 1)))
+lstm.add(Dense(predict_length))
+lstm.compile(optimizer='adam', loss='mse')
+
+
+lstm.fit(X_data, y_data, epochs=30, batch_size=1)
+
+
+predict = lstm.predict(X_data)
+predict = scaler.inverse_transform(predict)               #convert back to seconds
+true_answer = final[input_length:]   # real last 1500
+
+# plot
+plt.figure(figsize=(12,5))
+plt.plot(true_answer, label="Actual Last 1500")
+plt.plot(predict[0], label="Predicted Last 1500")
+plt.legend()
+plt.show()
