@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from sklearn.preprocessing import MinMaxScaler
-
-
+from sklearn.metrics import mean_absolute_error
+import time
 
 #input data
 data_path = r"D:\School\Research\Heart\bidmc-congestive-heart-failure-database-1.0.0"
@@ -41,12 +41,22 @@ lstm.add(Dense(1))
 lstm.compile(optimizer='adam', loss='mse')
 
 lstm.fit(feed, answer, epochs=10, batch_size=32)             #training, 10 times
+
+start = time.time()
 predict = lstm.predict(feed)
+inference_time=time.time()-start
+
 predict = scaler.inverse_transform(predict)               #convert back to seocnds
 true_answer = scaler.inverse_transform(answer)
+
+mae = mean_absolute_error(true_answer, predict)
+print(f"MAE: {mae:.4f} 秒")
+print(f"Inference {inference_time} Seconds")
+ 
 
 plt.figure(figsize=(12,5))
 plt.plot(true_answer, label="Actual")
 plt.plot(predict, label="Predicted")
 plt.legend()
 plt.show()
+
